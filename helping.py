@@ -111,3 +111,14 @@ matching_result = compare_and_append_all_with_strict_and(Values_API, Values_VS)
 # Display the matching dictionary
 print("Matching values from Values_API (with strict AND logic for all conditions):")
 print(matching_result)
+
+# Iterate over the "result" dictionary
+for key, value in data["result"].items():
+    print(f"Key: {key}")
+    for sub_key, sub_value in value.items():
+        if isinstance(sub_value, list):
+            print(f"{sub_key}:")
+            for item in sub_value:
+                print(f"  - {item}")
+        else:
+            print(f"{sub_key}: {sub_value}")
