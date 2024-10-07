@@ -122,3 +122,34 @@ for key, value in data["result"].items():
                 print(f"  - {item}")
         else:
             print(f"{sub_key}: {sub_value}")
+merged_data = {}
+
+for key, value in data.items():
+    if "owner" in key:
+        # Get the main key by removing "owner"
+        main_key = key.replace("owner", "")
+        if main_key in data:
+            merged_dict = {}
+
+            # Loop through all key-value pairs in both dictionaries (main and owner)
+            for k in set(data[main_key].keys()).union(value.keys()):
+                main_val = data[main_key].get(k)
+                owner_val = value.get(k)
+
+                if isinstance(main_val, list) and isinstance(owner_val, list):
+                    # Merge lists and remove duplicates
+                    merged_dict[k] = list(set(main_val + owner_val))
+                elif main_val == owner_val:
+                    # If values are the same, keep one
+                    merged_dict[k] = main_val
+                elif main_val is None:
+                    # If the main dictionary doesn't have the key, use the owner dictionary's value
+                    merged_dict[k] = owner_val
+                elif owner_val is None:
+                    # If the owner dictionary doesn't have the key, use the main dictionary's value
+                    merged_dict[k] = main_val
+                else:
+                    # If values are different, keep both in a tuple
+                    merged_dict[k] = (main_val, owner_val)
+
+            merged_data[main_key] = merged_dict
