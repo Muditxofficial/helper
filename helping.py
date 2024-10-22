@@ -153,3 +153,25 @@ for key, value in data.items():
                     merged_dict[k] = (main_val, owner_val)
 
             merged_data[main_key] = merged_dict
+
+
+# Create a new dictionary by merging Values_API and Values_VS
+merged_dict = {}
+
+# First, copy all key-value pairs from Values_API to merged_dict
+for key, value in Values_API.items():
+    merged_dict[key] = value
+
+# Now, handle merging for the '1234' key specifically
+for key, value in Values_VS.items():
+    if key in merged_dict:
+        # Initialize an empty list for INTENT
+        intent_list = []
+        for item in value:
+            if "INTENT" in item:
+                intent_list.append(item["INTENT"])
+
+        # Update the existing dictionary in merged_dict
+        merged_dict[key].update({"AGT": "", "INTENT": intent_list})
+    else:
+        merged_dict[key] = value
