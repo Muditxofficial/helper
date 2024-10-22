@@ -1,35 +1,61 @@
 # Define the two dictionaries
 Values_API = {
-    "101234": {"FINE": "mudit", "LATE": "choudhary", "ADS": "BEN", "INT": "ADR"},
-    "14322": {"FINE": "kajak", "LATE": "NEON", "ADS": "LCZ", "INT": "ADR"},
-    "101234owner": {
-        "FINE_OWNER": "TRIPLE",
-        "LATE_OWNER": "VINCE",
-        "INT": "ADR",
-        "GEND": "MALE",
+    "NAMECHG": {
+        "1234owner": {"FOWN": "claire", "LOWN": "Freuen"},
+        "1234": {
+            "FINS": "claire",
+            "LINS": "Freuen",
+            "ADMIN": "CAPS",
+            "AGENT_DETAILS": [["srm", "708"]],
+        },
     },
-    "14322owner": {"FINE_OWNER": "TRIPLE2", "LATE_OWNER": "VINCE2", "INT": "ADR"},
+    "ADRCHG": {
+        "1234owner": {"FOWN": "claire", "LOWN": "Freuen"},
+        "1234": {
+            "FINS": "claire",
+            "LINS": "Freuen",
+            "ADMIN": "CAPS",
+            "AGENT_DETAILS": [["srm", "708"]],
+        },
+    },
 }
 
 Values_VS = {
-    "101234": {
-        "FINE": "mudit",
-        "LATE": "choudhary",
-        "ADS": "BEN",
-        "INT": "ADR",
-        "FINE_OWNER": "TRIPLE",
-        "LATE_OWNER": "VINCE",
-        "VALID_DATE": True,
+    "NAMECHG": {
+        "1234": {
+            "FOWN": "claire",
+            "LOWN": "Freuen",
+            "FINS": "claire",
+            "LINS": "Freuen",
+            "date": "09/30/2024",
+            "VALID_DATE": True,
+            "AGENT_CODE": "708",
+        }
     },
-    "14322": {
-        "FINE": "kajak",
-        "LATE": "NEON",
-        "ADS": "LCZ",
-        "INT": "ADR",
-        "FINE_OWNER": "TRIPLE2",
-        "LATE_OWNER": "VINCE2",
-        "VALID_DATE": True,
+    "ADRCHG": {
+        "1234": {
+            "FOWN": "claire",
+            "LOWN": "Freuen",
+            "FINS": "claire",
+            "LINS": "Freuen",
+            "date": "09/30/2024",
+            "VALID_DATE": True,
+            "AGENT_CODE": "708",
+        }
     },
+}
+merged = {
+    "1234": {
+        "FOWN": "claire",
+        "LOWN": "Freuen",
+        "FINS": "claire",
+        "LINS": "Freuen",
+        "date": "09/30/2024",
+        "VALID_DATE": True,
+        "ADMIN": "CAPS",
+        "AGENT_CODE": "708",
+        "INTENT": ["NAMECHG", "ADRCHG"],
+    }
 }
 
 
@@ -175,3 +201,28 @@ for key, value in Values_VS.items():
         merged_dict[key].update({"AGT": "", "INTENT": intent_list})
     else:
         merged_dict[key] = value
+merged = {}
+
+# Iterate over the intents in Values_VS
+for intent, vs_data in Values_VS.items():
+    for key, vs_values in vs_data.items():
+        # Check if VALID_DATE is True
+        if vs_values.get("VALID_DATE") and key in Values_API[intent]:
+            api_values = Values_API[intent][key]
+
+            # Check if the required fields match
+            if (
+                vs_values["FOWN"] == api_values.get("FOWN")
+                and vs_values["LOWN"] == api_values.get("LOWN")
+                and vs_values["FINS"] == api_values.get("FINS")
+                and vs_values["LINS"] == api_values.get("LINS")
+                and vs_values["AGENT_CODE"] == api_values["AGENT_DETAILS"][0][1]
+            ):  # Match AGENT_CODE with AGENT_DETAILS
+
+                # Merge the values into the final dictionary
+                merged[key] = {
+                    **vs_values,  # Start with the Values_VS values
+                    **api_values,  # Add Values_API values
+                    "INTENT": merged.get(key, {}).get("INTENT", [])
+                    + [intent],  # Add intent to INTENT list
+                }
