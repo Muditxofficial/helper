@@ -1,165 +1,34 @@
-# Define the two dictionaries
-Values_API = {
-    "NAMECHG": {
-        "1234owner": {"FOWN": "claire", "LOWN": "Freuen"},
-        "1234": {
-            "FINS": "claire",
-            "LINS": "Freuen",
-            "ADMIN": "CAPS",
-            "AGENT_DETAILS": [["srm", "708"]],
-        },
-        "0999owner": {"FOWN": "claire", "LOWN": "Freuen"},
-        "0999": {
-            "FINS": "claire",
-            "LINS": "Freuen",
-            "ADMIN": "CAPS",
-            "AGENT_DETAILS": [["srm", "708"]],
-        },
-    },
-    "ADRCHG": {
-        "1234owner": {"FOWN": "claire", "LOWN": "Freuen"},
-        "1234": {
-            "FINS": "claire",
-            "LINS": "Freuen",
-            "ADMIN": "CAPS",
-            "AGENT_DETAILS": [["srm", "708"]],
-        },
-        "0999owner": {"FOWN": "claire", "LOWN": "Freuen"},
-        "0999": {
-            "FINS": "claire",
-            "LINS": "Freuen",
-            "ADMIN": "CAPS",
-            "AGENT_DETAILS": [["srm", "708"]],
-        },
-    },
-}
-
-Values_VS = {
-    "NAMECHG": {
-        "1234": {
-            "FOWN": "claire",
-            "LOWN": "Freuen",
-            "FINS": "claire",
-            "LINS": "Freuen",
-            "date": "09/30/2024",
-            "VALID_DATE": True,
-            "AGENT_CODE": "708",
-        },
-        "0999": {
-            "FOWN": "claire",
-            "LOWN": "Freuen",
-            "FINS": "claire",
-            "LINS": "Freuen",
-            "date": "09/30/2024",
-            "VALID_DATE": True,
-            "AGENT_CODE": "708",
-        },
-    },
-    "ADRCHG": {
-        "1234": {
-            "FOWN": "claire",
-            "LOWN": "Freuen",
-            "FINS": "claire",
-            "LINS": "Freuen",
-            "date": "09/30/2024",
-            "VALID_DATE": True,
-            "AGENT_CODE": "708",
-        },
-        "0999": {
-            "FOWN": "claire",
-            "LOWN": "Freuen",
-            "FINS": "claire",
-            "LINS": "Freuen",
-            "date": "09/30/2024",
-            "VALID_DATE": True,
-            "AGENT_CODE": "708",
-        },
-    },
-}
-merged = {
-    "1234": {
-        "FOWN": "claire",
-        "LOWN": "Freuen",
-        "FINS": "claire",
-        "LINS": "Freuen",
-        "date": "09/30/2024",
-        "VALID_DATE": True,
-        "ADMIN": "CAPS",
-        "AGENT_CODE": "708",
-        "INTENT": ["NAMECHG", "ADRCHG"],
-    },
-    "0999": {
-        "FOWN": "claire",
-        "LOWN": "Freuen",
-        "FINS": "claire",
-        "LINS": "Freuen",
-        "date": "09/30/2024",
-        "VALID_DATE": True,
-        "ADMIN": "CAPS",
-        "AGENT_CODE": "708",
-        "INTENT": ["NAMECHG", "ADRCHG"],
-    },
-}
+merged = {"BENE": {}, "NAME": {}, "ADR": {}}
 
 
-# Function to compare specific keys in both dictionaries
-def compare_specific_keys(api_dict, vs_dict):
-    results = {}
+# Generalized merge function to check FOWN, LOWn, and Valid_date for any section (BENE, NAME, ADR)
+def merge_section(section_key, dict1, dict2):
+    for key, data1 in dict1.items():
+        if key in dict2:
+            data2 = dict2[key]
 
-    # Step 1: Compare "FINE" and "LATE" for matching keys
-    for key in api_dict:
-        if key in vs_dict and not key.endswith("owner"):  # Skip owner keys
-            common_comparison = {}
-            # Compare only "FINE" and "LATE"
-            for sub_key in ["FINE", "LATE"]:
-                if sub_key in api_dict[key] and sub_key in vs_dict[key]:
-                    common_comparison[sub_key] = (
-                        api_dict[key][sub_key] == vs_dict[key][sub_key]
-                    )
-            results[key] = common_comparison
+            # Check if FOWN and LOWn match and Valid_date is True
+            if (
+                data1["FOWN"] == data2["FOWN"]
+                and data1["LOWn"] == data2["LOWn"]
+                and data2.get("Valid_date", False)
+            ):
 
-    # Step 2: Compare "FINE_OWNER" and "LATE_OWNER" for "owner" keys
-    for key in api_dict:
-        if key.endswith("owner"):  # Only consider owner keys
-            base_key = key.replace("owner", "")  # Get the base key like "101234"
-            if base_key in vs_dict:  # Ensure the base key exists in Values_VS
-                owner_comparison = {}
-                # Compare only "FINE_OWNER" and "LATE_OWNER"
-                for sub_key in ["FINE_OWNER", "LATE_OWNER"]:
-                    if sub_key in api_dict[key] and sub_key in vs_dict[base_key]:
-                        owner_comparison[sub_key] = (
-                            api_dict[key][sub_key] == vs_dict[base_key][sub_key]
-                        )
-                results[key] = owner_comparison
-
-    return results
+                # Merge the dictionaries for this key
+                merged[section_key][key] = {
+                    "FOWN": data1["FOWN"],
+                    "LOWn": data1["LOWn"],
+                    "ADMIN": data1["ADMIN"],
+                    "LOC": data1.get("LOC", ""),
+                    "SEC": data2.get("SEC", ""),
+                    "Valid_date": data2.get("Valid_date", False),
+                }
 
 
-# Run the comparison
-comparison_result = compare_specific_keys(Values_API, Values_VS)
+# Apply the merge function for each section: NAME, ADR, BENE
+merge_section("NAME", Values_API_RES["NAME"], Values2_HS_RES["NAME"])
+merge_section("ADR", Values_API_RES["ADR"], Values2_HS_RES["ADR"])
+merge_section("BENE", Values_API_RES["BENE"], Values2_HS_RES["BENE"])
 
-# Display the comparison results
-for key, value in comparison_result.items():
-    print(f"Comparing {key}:")
-    for sub_key, match in value.items():
-        print(f"  {sub_key}: {'Match' if match else 'No match'}")
-#####new
-
-merged_dict = {}
-
-# Iterate through the input dictionary
-for intent, entries in input_dict.items():
-    # Initialize a dictionary to hold merged data for each intent
-    merged_data = {}
-
-    # Iterate through each key-value pair in the intent's entries
-    for value in entries.values():
-        for k, v in value.items():
-            # Only add the key-value pair if the key is not already present
-            if k not in merged_data:
-                merged_data[k] = v
-
-    # Assign the merged data to the respective intent in merged_dict
-    # Using the first key as a reference for the new structure
-    first_key = list(entries.keys())[0]
-    merged_dict[intent] = {first_key: merged_data}
+# Print the merged result
+print(merged)
