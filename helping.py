@@ -1,34 +1,31 @@
-merged = {"BENE": {}, "NAME": {}, "ADR": {}}
+root = ET.fromstring(xml_data)
 
+# Namespace handling
+ns = {"ns": "me"}  # Change this if your XML has a different namespace
 
-# Generalized merge function to check FOWN, LOWn, and Valid_date for any section (BENE, NAME, ADR)
-def merge_section(section_key, dict1, dict2):
-    for key, data1 in dict1.items():
-        if key in dict2:
-            data2 = dict2[key]
+# Check if TxResult is "Success"
+tx_result = root.find(".//TxResult")
+if tx_result is not None and tx_result.text.strip() == "Success":
+    # Extract admin
+    admin = root.find(".//ADMIN").text.strip()
 
-            # Check if FOWN and LOWn match and Valid_date is True
-            if (
-                data1["FOWN"] == data2["FOWN"]
-                and data1["LOWn"] == data2["LOWn"]
-                and data2.get("Valid_date", False)
-            ):
+    # Extract user details
+    users = []
+    for user in root.findall(".//TCRMCONPRBOBJ"):
+        role = user.find("Role").text.strip()
+        firstname = user.find(".//FirstName").text.strip()
+        lastname = user.find(".//LastName").text.strip()
+        identify = user.find(".//Identify").text.strip()
+        
+        users.append({
+            "role": role,
+            "firstname": firstname,
+            "lastname": lastname,
+            "identify": identify
+        })
 
-                # Merge the dictionaries for this key
-                merged[section_key][key] = {
-                    "FOWN": data1["FOWN"],
-                    "LOWn": data1["LOWn"],
-                    "ADMIN": data1["ADMIN"],
-                    "LOC": data1.get("LOC", ""),
-                    "SEC": data2.get("SEC", ""),
-                    "Valid_date": data2.get("Valid_date", False),
-                }
-
-
-# Apply the merge function for each section: NAME, ADR, BENE
-merge_section("NAME", Values_API_RES["NAME"], Values2_HS_RES["NAME"])
-merge_section("ADR", Values_API_RES["ADR"], Values2_HS_RES["ADR"])
-merge_section("BENE", Values_API_RES["BENE"], Values2_HS_RES["BENE"])
-
-# Print the merged result
-print(merged)
+    # Final output dictionary
+    result = {"admin": admin, "users": users}
+    print(result)
+else:
+    print("Transaction was not successful.")
