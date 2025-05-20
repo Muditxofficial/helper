@@ -4,17 +4,19 @@ from email import policy
 from bs4 import BeautifulSoup
 from pathlib import Path
 
-def extract_eml_to_txt_recursive(source_root, target_root):
-    for root, dirs, files in os.walk(source_root):
+def extract_eml_recursive(source_root, target_root):
+    for root, _, files in os.walk(source_root):
         for file in files:
             if file.lower().endswith('.eml'):
                 source_path = os.path.join(root, file)
-                rel_path = os.path.relpath(source_path, source_root)
-                target_rel_path = Path(rel_path).with_suffix('.txt')
-                target_path = os.path.join(target_root, target_rel_path)
+                
+                # Compute relative path and target .txt path
+                relative_path = os.path.relpath(source_path, source_root)
+                target_path = os.path.join(target_root, Path(relative_path).with_suffix('.txt'))
 
                 os.makedirs(os.path.dirname(target_path), exist_ok=True)
 
+                # Read and parse the .eml
                 with open(source_path, 'rb') as eml_file:
                     msg = email.message_from_binary_file(eml_file, policy=policy.default)
 
@@ -22,27 +24,26 @@ def extract_eml_to_txt_recursive(source_root, target_root):
                 from_ = msg['from'] or 'unknown'
                 to = msg['to'] or 'unknown'
                 date = msg['date'] or 'unknown'
-                text_content = ""
+                body = ""
 
                 for part in msg.walk():
                     content_type = part.get_content_type()
                     if content_type == "text/plain":
-                        text_content = part.get_payload(decode=True).decode(part.get_content_charset('utf-8'), errors='replace')
+                        body = part.get_payload(decode=True).decode(part.get_content_charset('utf-8'), errors='replace')
                         break
                     elif content_type == "text/html":
                         html = part.get_payload(decode=True).decode(part.get_content_charset('utf-8'), errors='replace')
-                        text_content = BeautifulSoup(html, 'html.parser').get_text()
+                        body = BeautifulSoup(html, 'html.parser').get_text()
 
-                # Combine metadata and body
-                full_content = f"Subject: {subject}\nFrom: {from_}\nTo: {to}\nDate: {date}\n\n{text_content}"
+                full_text = f"Subject: {subject}\nFrom: {from_}\nTo: {to}\nDate: {date}\n\n{body}"
 
                 with open(target_path, 'w', encoding='utf-8') as txt_file:
-                    txt_file.write(full_content)
+                    txt_file.write(full_text)
 
-    print("✅ All .eml files have been converted to .txt")
+    print("✅ All .eml files have been converted and saved.")
 
 # Example usage:
-source_folder = r"C:\Path\To\EmailsRoot"
-target_folder = r"C:\Path\To\OutputTxtRoot"
+source_directory = r"C:\Path\To\folder1\folder2"
+target_directory = r"C:\Path\To\output_texts"
 
-extract_eml_to_txt_recursive(source_folder, target_folder)
+extract_eml_recursive(source_directory, target_directory)
