@@ -1,0 +1,25 @@
+from bs4 import BeautifulSoup
+
+def get_clean_email_body(msg):
+    plain_body = ""
+    html_body = ""
+
+    # Iterate over all parts of the email
+    for part in msg.walk():
+        content_type = part.get_content_type()
+        content_disposition = str(part.get('Content-Disposition'))
+
+        if "attachment" in content_disposition:
+            continue  # skip attachments
+
+        if content_type == "text/plain":
+            plain_body = part.get_payload(decode=True).decode(part.get_content_charset('utf-8'), errors='replace')
+
+        elif content_type == "text/html":
+            raw_html = part.get_payload(decode=True).decode(part.get_content_charset('utf-8'), errors='replace')
+            # Use BeautifulSoup to strip tags completely
+            soup = BeautifulSoup(raw_html, 'html.parser')
+            html_body = soup.get_text(separator='\n', strip=True)
+
+    # Prefer plain text, else fallback to cleaned HTML
+    return plain_body.strip() if plain_body.strip() else html_body.strip()
