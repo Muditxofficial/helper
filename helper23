@@ -1,49 +1,44 @@
 import os
-import email
-from email import policy
-from bs4 import BeautifulSoup
+import fitz  # PyMuPDF
 from pathlib import Path
 
-def extract_eml_recursive(source_root, target_root):
-    for root, _, files in os.walk(source_root):
+def convert_pdf_to_text(pdf_path):
+    text = ""
+    try:
+        doc = fitz.open(pdf_path)
+        for page in doc:
+            text += page.get_text() + "\n"
+        doc.close()
+    except Exception as e:
+        print(f"❌ Error reading {pdf_path}: {e}")
+    return text.strip()
+
+def convert_pdfs_recursive(source_dir, output_dir):
+    for root, _, files in os.walk(source_dir):
         for file in files:
-            if file.lower().endswith('.eml'):
-                source_path = os.path.join(root, file)
+            if file.lower().endswith('.pdf'):
+                pdf_path = os.path.join(root, file)
+                # Calculate relative path from source_dir to file, replace .pdf with .txt
+                relative_path = os.path.relpath(pdf_path, source_dir)
+                txt_relative_path = Path(relative_path).with_suffix('.txt')
+                txt_path = os.path.join(output_dir, txt_relative_path)
                 
-                # Compute relative path and target .txt path
-                relative_path = os.path.relpath(source_path, source_root)
-                target_path = os.path.join(target_root, Path(relative_path).with_suffix('.txt'))
+                # Make sure output folder exists
+                os.makedirs(os.path.dirname(txt_path), exist_ok=True)
+                
+                # Convert PDF to text
+                text = convert_pdf_to_text(pdf_path)
+                
+                # Save to txt
+                with open(txt_path, 'w', encoding='utf-8') as f:
+                    f.write(text)
+                
+                print(f"✅ Converted: {pdf_path} -> {txt_path}")
 
-                os.makedirs(os.path.dirname(target_path), exist_ok=True)
+    print("✅ All PDFs converted.")
 
-                # Read and parse the .eml
-                with open(source_path, 'rb') as eml_file:
-                    msg = email.message_from_binary_file(eml_file, policy=policy.default)
+# ==== SET YOUR PATHS HERE ====
+source_directory = r"C:\Path\To\folder1"
+output_directory = r"C:\Path\To\output_txt"
 
-                subject = msg['subject'] or 'no_subject'
-                from_ = msg['from'] or 'unknown'
-                to = msg['to'] or 'unknown'
-                date = msg['date'] or 'unknown'
-                body = ""
-
-                for part in msg.walk():
-                    content_type = part.get_content_type()
-                    if content_type == "text/plain":
-                        body = part.get_payload(decode=True).decode(part.get_content_charset('utf-8'), errors='replace')
-                        break
-                    elif content_type == "text/html":
-                        html = part.get_payload(decode=True).decode(part.get_content_charset('utf-8'), errors='replace')
-                        body = BeautifulSoup(html, 'html.parser').get_text()
-
-                full_text = f"Subject: {subject}\nFrom: {from_}\nTo: {to}\nDate: {date}\n\n{body}"
-
-                with open(target_path, 'w', encoding='utf-8') as txt_file:
-                    txt_file.write(full_text)
-
-    print("✅ All .eml files have been converted and saved.")
-
-# Example usage:
-source_directory = r"C:\Path\To\folder1\folder2"
-target_directory = r"C:\Path\To\output_texts"
-
-extract_eml_recursive(source_directory, target_directory)
+convert_pdfs_recursive(source_directory, output_directory)
