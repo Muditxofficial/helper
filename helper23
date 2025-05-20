@@ -1,0 +1,48 @@
+import os
+import email
+from email import policy
+from bs4 import BeautifulSoup
+from pathlib import Path
+
+def extract_eml_to_txt_recursive(source_root, target_root):
+    for root, dirs, files in os.walk(source_root):
+        for file in files:
+            if file.lower().endswith('.eml'):
+                source_path = os.path.join(root, file)
+                rel_path = os.path.relpath(source_path, source_root)
+                target_rel_path = Path(rel_path).with_suffix('.txt')
+                target_path = os.path.join(target_root, target_rel_path)
+
+                os.makedirs(os.path.dirname(target_path), exist_ok=True)
+
+                with open(source_path, 'rb') as eml_file:
+                    msg = email.message_from_binary_file(eml_file, policy=policy.default)
+
+                subject = msg['subject'] or 'no_subject'
+                from_ = msg['from'] or 'unknown'
+                to = msg['to'] or 'unknown'
+                date = msg['date'] or 'unknown'
+                text_content = ""
+
+                for part in msg.walk():
+                    content_type = part.get_content_type()
+                    if content_type == "text/plain":
+                        text_content = part.get_payload(decode=True).decode(part.get_content_charset('utf-8'), errors='replace')
+                        break
+                    elif content_type == "text/html":
+                        html = part.get_payload(decode=True).decode(part.get_content_charset('utf-8'), errors='replace')
+                        text_content = BeautifulSoup(html, 'html.parser').get_text()
+
+                # Combine metadata and body
+                full_content = f"Subject: {subject}\nFrom: {from_}\nTo: {to}\nDate: {date}\n\n{text_content}"
+
+                with open(target_path, 'w', encoding='utf-8') as txt_file:
+                    txt_file.write(full_content)
+
+    print("✅ All .eml files have been converted to .txt")
+
+# Example usage:
+source_folder = r"C:\Path\To\EmailsRoot"
+target_folder = r"C:\Path\To\OutputTxtRoot"
+
+extract_eml_to_txt_recursive(source_folder, target_folder)
