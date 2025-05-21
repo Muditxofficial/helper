@@ -1,3 +1,6 @@
+import os
+from pathlib import Path
+from email import message_from_file
 from bs4 import BeautifulSoup
 
 def extract_eml_data(eml_path):
@@ -59,3 +62,45 @@ def extract_eml_data(eml_path):
         print(f"❌ Error reading {eml_path}: {e}")
 
     return metadata
+
+def create_custom_filename(eml_path, source_dir):
+    relative_path = os.path.relpath(eml_path, source_dir)
+    path_parts = Path(relative_path).parts
+
+    parent = path_parts[-3] if len(path_parts) >= 3 else "parent"
+    child = path_parts[-2] if len(path_parts) >= 2 else "child"
+    original_file = Path(eml_path).stem
+
+    return f"{parent}-{child}-{original_file}.txt"
+
+def convert_eml_recursive(source_dir, output_dir):
+    for root, _, files in os.walk(source_dir):
+        for file in files:
+            if file.lower().endswith('.eml'):
+                eml_path = os.path.join(root, file)
+                metadata = extract_eml_data(eml_path)
+
+                content = (
+                    f"From: {metadata['From']}\n"
+                    f"Sent: {metadata['Sent']}\n"
+                    f"To: {metadata['To']}\n"
+                    f"Cc: {metadata['Cc']}\n"
+                    f"Attachments: {metadata['Attachments']}\n\n"
+                    f"{metadata['Body']}"
+                )
+
+                # Save the converted content
+                new_filename = create_custom_filename(eml_path, source_dir)
+                os.makedirs(output_dir, exist_ok=True)
+                output_path = os.path.join(output_dir, new_filename)
+
+                with open(output_path, 'w', encoding='utf-8') as f:
+                    f.write(content)
+
+                print(f"✅ Saved: {output_path}")
+
+# === 🔧 SET YOUR PATHS HERE ===
+source_directory = r"C:\Path\To\folder1"
+output_directory = r"C:\Path\To\output_txt"
+
+convert_eml_recursive(source_directory, output_directory)
