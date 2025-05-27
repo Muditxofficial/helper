@@ -20,3 +20,14 @@ for part in msg.walk():
         # Extract HTML content
         html_content = part.get_payload(decode=True).decode(part.get_content_charset() or 'utf-8')
         print("HTML Content:\n", html_content)
+
+
+####
+def clean_html_keep_text(html):
+    soup = BeautifulSoup(html, "html.parser")
+    # Remove unwanted tags and their content
+    for tag in soup(["script", "style", "head", "title", "meta", "[document]"]):
+        tag.extract()
+    # Replace tags with space and normalize whitespace
+    text = soup.get_text(separator=" ")
+    return ' '.join(text.split())
